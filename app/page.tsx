@@ -175,7 +175,7 @@ export default function LoginPage() {
 
         <p style={{ textAlign:'center', fontSize:'13px', color:'rgba(255,255,255,0.4)', margin:0 }}>
           Belum punya akun?{' '}
-          <span style={{ color:'#a78bfa', cursor:'pointer', fontWeight:'600' }}>Daftar gratis</span>
+          <span onClick={() => router.push('/register')} style={{ color:'#a78bfa', cursor:'pointer', fontWeight:'600' }}>Daftar gratis</span>
         </p>
       </div>
     </div>
