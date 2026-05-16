@@ -121,7 +121,10 @@ export default function LoginPage() {
         </div>
 
         <div style={{ marginBottom:'24px' }}>
-          <label style={{ fontSize:'13px', fontWeight:'500', color:'rgba(255,255,255,0.7)', display:'block', marginBottom:'8px' }}>Password</label>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'8px' }}>
+  <label style={{ fontSize:'13px', fontWeight:'500', color:'rgba(255,255,255,0.7)' }}>Password</label>
+  <span onClick={() => router.push('/forgot-password')} style={{ fontSize:'12px', color:'#a78bfa', cursor:'pointer' }}>Lupa password?</span>
+</div>
           <div style={{ position:'relative' }}>
             <input
               className="input-field"
