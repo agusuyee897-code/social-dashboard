@@ -19,7 +19,7 @@ const platforms = [
       'Buat App baru di dashboard',
       'Copy API Key & API Secret Key di tab "Keys and Tokens"',
     ],
-    fields: ['API Key', 'API Secret Key'],
+    fields: ['API Key', 'API Secret Key', 'Access Token', 'Access Token Secret'],
     svg: (<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>)
   },
   {
@@ -153,15 +153,19 @@ export default function Accounts() {
       return
     }
     const { error } = await supabase.from('accounts').insert({
-      user_id: userId,
-      platform: platformId,
-      username: username.startsWith('@') ? username : '@' + username,
-      status: 'active',
-      api_field1_name: plat.fields[0],
-      api_field1_value: formFields[plat.fields[0]] || '',
-      api_field2_name: plat.fields[1],
-      api_field2_value: formFields[plat.fields[1]] || '',
-    })
+  user_id: userId,
+  platform: platformId,
+  username: username.startsWith('@') ? username : '@' + username,
+  status: 'active',
+  api_field1_name: plat.fields[0],
+  api_field1_value: formFields[plat.fields[0]] || '',
+  api_field2_name: plat.fields[1],
+  api_field2_value: formFields[plat.fields[1]] || '',
+  api_field3_name: plat.fields[2] || null,
+  api_field3_value: formFields[plat.fields[2]] || null,
+  api_field4_name: plat.fields[3] || null,
+  api_field4_value: formFields[plat.fields[3]] || null,
+})
     if (error) {
       setError('Gagal menyimpan: ' + error.message)
       setTimeout(() => setError(''), 3000)

@@ -88,22 +88,44 @@ export default function Post() {
     if ((!postText.trim() && media.length === 0) || selected.length === 0 || !userId) return
     setLoading(true)
 
-    // Insert satu row per platform
-    const inserts = selected.map(platform => ({
-      user_id: userId,
-      platform,
-      content: postText,
-      media_urls: media.map(m => m.name), // simpan nama file (URL blob tidak bisa disimpan)
-      status: 'sent',
-    }))
+    let hasError = false
 
-    const { error } = await supabase.from('posts').insert(inserts)
+    for (const platform of selected) {
+      if (platform === 'x') {
+        const res = await fetch('/api/post-tweet', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: postText, userId }),
+        })
+        const result = await res.json()
+        await supabase.from('posts').insert({
+          user_id: userId,
+          platform,
+          content: postText,
+          media_urls: media.map(m => m.name),
+          status: result.success ? 'sent' : 'failed',
+        })
+        if (!result.success) {
+          hasError = true
+          setSuccess(`❌ Gagal posting ke Twitter: ${result.error}`)
+          setTimeout(() => setSuccess(''), 5000)
+        }
+      } else {
+        await supabase.from('posts').insert({
+          user_id: userId,
+          platform,
+          content: postText,
+          media_urls: media.map(m => m.name),
+          status: 'sent',
+        })
+      }
+    }
 
-    if (!error) {
-      await fetchPosts(userId)
+    await fetchPosts(userId)
+    if (!hasError) {
       setPostText('')
       setMedia([])
-      setSuccess(`Postingan berhasil dikirim ke ${selected.length} platform!`)
+      setSuccess(`🚀 Postingan berhasil dikirim ke ${selected.length} platform!`)
       setTimeout(() => setSuccess(''), 3000)
     }
     setLoading(false)
