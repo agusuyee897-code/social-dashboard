@@ -12,14 +12,23 @@ import Accounts from './components/Accounts'
 import Settings from './components/Settings'
 
 export default function Dashboard() {
-  const [user, setUser] = useState<User | null>(null)
-  const [activeMenu, setActiveMenu] = useState('home')
+  const [user, setUser]               = useState<User | null>(null)
+  const [activeMenu, setActiveMenu]   = useState('home')
+  const [activeCount, setActiveCount] = useState(0)
   const router = useRouter()
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) { router.push('/'); return }
       setUser(data.user)
+
+      // Ambil jumlah akun aktif dari Supabase
+      const { count } = await supabase
+        .from('accounts')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', data.user.id)
+        .eq('status', 'active')
+      setActiveCount(count || 0)
     })
   }, [router])
 
@@ -29,12 +38,12 @@ export default function Dashboard() {
   }
 
   const menuTitles: Record<string, string> = {
-    home: 'Dashboard',
-    post: 'Buat Posting',
-    schedule: 'Jadwal',
+    home:      'Dashboard',
+    post:      'Buat Posting',
+    schedule:  'Jadwal',
     analytics: 'Analitik',
-    accounts: 'Manajemen Akun',
-    settings: 'Pengaturan',
+    accounts:  'Manajemen Akun',
+    settings:  'Pengaturan',
   }
 
   return (
@@ -78,17 +87,20 @@ export default function Dashboard() {
             display:'flex', gap:'8px', alignItems:'center',
             background:'rgba(255,255,255,0.05)',
             border:'1px solid rgba(255,255,255,0.1)',
-            padding:'6px 14px', borderRadius:'99px', fontSize:'12px', color:'#4ade80'
-          }}>● 4 akun aktif</div>
+            padding:'6px 14px', borderRadius:'99px', fontSize:'12px',
+            color: activeCount > 0 ? '#4ade80' : 'rgba(255,255,255,0.4)'
+          }}>
+            ● {activeCount} akun aktif
+          </div>
         </div>
 
         {/* Konten */}
-        {activeMenu === 'home' && <Home />}
-        {activeMenu === 'post' && <Post />}
-        {activeMenu === 'schedule' && <Schedule />}
+        {activeMenu === 'home'      && <Home />}
+        {activeMenu === 'post'      && <Post />}
+        {activeMenu === 'schedule'  && <Schedule />}
         {activeMenu === 'analytics' && <Analytics />}
-        {activeMenu === 'accounts' && <Accounts />}
-        {activeMenu === 'settings' && <Settings />}
+        {activeMenu === 'accounts'  && <Accounts />}
+        {activeMenu === 'settings'  && <Settings />}
       </div>
     </div>
   )
