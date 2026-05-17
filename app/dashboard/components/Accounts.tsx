@@ -14,13 +14,13 @@ const platforms = [
     color: '#000000', selectedBg: 'linear-gradient(135deg,#1a1a1a,#333)', border: '#ffffff',
     apiUrl: 'developer.twitter.com',
     steps: [
-  'Buka developer.twitter.com dan login',
-  'Buat App baru di dashboard → klik "Create App"',
-  'Pergi ke tab "Keys and Tokens" → copy API Key & API Secret Key',
-  'Pastikan App permission diset ke "Read and Write" di User Authentication Settings',
-  'Scroll ke bawah → klik "Generate" pada Access Token & Secret',
-  'Copy Access Token & Access Token Secret yang muncul',
-],
+      'Buka developer.twitter.com dan login',
+      'Buat App baru di dashboard → klik "Create App"',
+      'Pergi ke tab "Keys and Tokens" → copy API Key & API Secret Key',
+      'Pastikan App permission diset ke "Read and Write" di User Authentication Settings',
+      'Scroll ke bawah → klik "Generate" pada Access Token & Secret',
+      'Copy Access Token & Access Token Secret yang muncul',
+    ],
     fields: ['API Key', 'API Secret Key', 'Access Token', 'Access Token Secret'],
     svg: (<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>)
   },
@@ -46,8 +46,9 @@ const platforms = [
       'Buat App baru → pilih tipe "Business"',
       'Tambahkan produk "Pages API"',
       'Copy App ID & App Secret dari Settings → Basic',
+      'Buat Page Access Token dari Graph API Explorer',
     ],
-    fields: ['App ID', 'App Secret'],
+    fields: ['App ID', 'App Secret', 'Page ID', 'Page Access Token'],
     svg: (<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>)
   },
   {
@@ -111,6 +112,31 @@ const statusConfig = {
   expired:   { label:'Token Expired', color:'#a78bfa', bg:'rgba(167,139,250,0.15)', border:'rgba(167,139,250,0.3)',icon:'⏰' },
 }
 
+function FieldInput({ label, value, onChange }: { label: string, value: string, onChange: (v: string) => void }) {
+  const [show, setShow] = useState(false)
+  return (
+    <div>
+      <div style={{ fontSize:'12px', color:'rgba(255,255,255,0.5)', marginBottom:'6px' }}>{label}</div>
+      <div style={{ position:'relative' }}>
+        <input
+          type={show ? 'text' : 'password'}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder={'Masukkan ' + label + '...'}
+          style={{ width:'100%', padding:'9px 36px 9px 12px', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'8px', color:'white', fontSize:'12px', fontFamily:'monospace', boxSizing:'border-box' }}
+        />
+        <button
+          type="button"
+          onClick={() => setShow(s => !s)}
+          style={{ position:'absolute', right:'8px', top:'50%', transform:'translateY(-50%)', background:'none', border:'none', color:'rgba(255,255,255,0.4)', cursor:'pointer', fontSize:'14px', padding:'0' }}
+        >
+          {show ? '🙈' : '👁️'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function Accounts() {
   const [accounts, setAccounts]         = useState<Account[]>([])
   const [activeTab, setActiveTab]       = useState<'accounts'|'connect'>('accounts')
@@ -155,19 +181,19 @@ export default function Accounts() {
       return
     }
     const { error } = await supabase.from('accounts').insert({
-  user_id: userId,
-  platform: platformId,
-  username: username.startsWith('@') ? username : '@' + username,
-  status: 'active',
-  api_field1_name: plat.fields[0],
-  api_field1_value: formFields[plat.fields[0]] || '',
-  api_field2_name: plat.fields[1],
-  api_field2_value: formFields[plat.fields[1]] || '',
-  api_field3_name: plat.fields[2] || null,
-  api_field3_value: formFields[plat.fields[2]] || null,
-  api_field4_name: plat.fields[3] || null,
-  api_field4_value: formFields[plat.fields[3]] || null,
-})
+      user_id: userId,
+      platform: platformId,
+      username: username.startsWith('@') ? username : '@' + username,
+      status: 'active',
+      api_field1_name: plat.fields[0],
+      api_field1_value: formFields[plat.fields[0]] || '',
+      api_field2_name: plat.fields[1],
+      api_field2_value: formFields[plat.fields[1]] || '',
+      api_field3_name: plat.fields[2] || null,
+      api_field3_value: formFields[plat.fields[2]] || null,
+      api_field4_name: plat.fields[3] || null,
+      api_field4_value: formFields[plat.fields[3]] || null,
+    })
     if (error) {
       setError('Gagal menyimpan: ' + error.message)
       setTimeout(() => setError(''), 3000)
@@ -175,7 +201,7 @@ export default function Accounts() {
     }
     await fetchAccounts(userId)
     setShowForm(null); setFormFields({}); setUsername('')
-    setSuccess(`${plat.label} berhasil terhubung!`)
+    setSuccess(plat.label + ' berhasil terhubung!')
     setTimeout(() => setSuccess(''), 3000)
     setActiveTab('accounts')
   }
@@ -264,14 +290,14 @@ export default function Accounts() {
                 const plat   = getPlatform(acc.platform)
                 const status = statusConfig[acc.status] || statusConfig.active
                 return (
-                  <div key={acc.id} style={{ display:'flex', alignItems:'center', gap:'12px', padding:'14px', borderRadius:'12px', background:'rgba(255,255,255,0.04)', border:`1px solid ${status.border}` }}>
-                    <div style={{ width:'42px', height:'42px', borderRadius:'12px', background:plat?.selectedBg||'#333', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, color:'white', boxShadow:`0 0 10px ${plat?.color||'#333'}55`, border:'1px solid rgba(255,255,255,0.08)' }}>
+                  <div key={acc.id} style={{ display:'flex', alignItems:'center', gap:'12px', padding:'14px', borderRadius:'12px', background:'rgba(255,255,255,0.04)', border:'1px solid ' + status.border }}>
+                    <div style={{ width:'42px', height:'42px', borderRadius:'12px', background:plat?.selectedBg||'#333', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, color:'white', boxShadow:'0 0 10px ' + (plat?.color||'#333') + '55', border:'1px solid rgba(255,255,255,0.08)' }}>
                       {plat?.svg}
                     </div>
                     <div style={{ flex:1 }}>
                       <div style={{ display:'flex', alignItems:'center', gap:'8px', flexWrap:'wrap' }}>
                         <span style={{ fontSize:'14px', fontWeight:'500', color:'white' }}>{acc.username}</span>
-                        <span style={{ fontSize:'11px', padding:'2px 8px', borderRadius:'99px', fontWeight:'500', background:status.bg, color:status.color, border:`1px solid ${status.border}` }}>{status.icon} {status.label}</span>
+                        <span style={{ fontSize:'11px', padding:'2px 8px', borderRadius:'99px', fontWeight:'500', background:status.bg, color:status.color, border:'1px solid ' + status.border }}>{status.icon} {status.label}</span>
                       </div>
                       <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.4)', marginTop:'3px' }}>
                         {plat?.label} · {new Date(acc.added_at).toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' })}
@@ -303,7 +329,7 @@ export default function Accounts() {
             {platforms.map(p => (
               <div key={p.id}>
                 <div style={{ display:'flex', alignItems:'center', gap:'12px', padding:'14px', borderRadius:'12px', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)' }}>
-                  <div style={{ width:'44px', height:'44px', borderRadius:'12px', background:p.selectedBg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, color:'white', boxShadow:`0 0 10px ${p.color}55`, border:'1px solid rgba(255,255,255,0.08)' }}>{p.svg}</div>
+                  <div style={{ width:'44px', height:'44px', borderRadius:'12px', background:p.selectedBg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, color:'white', boxShadow:'0 0 10px ' + p.color + '55', border:'1px solid rgba(255,255,255,0.08)' }}>{p.svg}</div>
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize:'14px', fontWeight:'500', color:'white' }}>{p.label}</div>
                     <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.4)', marginTop:'2px' }}>{accounts.filter(a=>a.platform===p.id).length} akun terhubung · {p.apiUrl}</div>
@@ -327,7 +353,7 @@ export default function Accounts() {
                     </div>
                     <div style={{ marginTop:'12px', padding:'10px 14px', borderRadius:'8px', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)' }}>
                       <div style={{ fontSize:'12px', color:'rgba(255,255,255,0.5)', marginBottom:'6px' }}>Field yang dibutuhkan:</div>
-                      <div style={{ display:'flex', gap:'8px' }}>
+                      <div style={{ display:'flex', gap:'8px', flexWrap:'wrap' }}>
                         {p.fields.map(f => (<span key={f} style={{ fontSize:'12px', padding:'3px 10px', borderRadius:'99px', background:'rgba(102,126,234,0.2)', color:'#a5b4fc', border:'1px solid rgba(102,126,234,0.3)' }}>{f}</span>))}
                       </div>
                     </div>
@@ -348,11 +374,12 @@ export default function Accounts() {
                     </div>
                     <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', marginBottom:'12px' }}>
                       {p.fields.map(f => (
-                        <div key={f}>
-                          <div style={{ fontSize:'12px', color:'rgba(255,255,255,0.5)', marginBottom:'6px' }}>{f}</div>
-                          <input type="password" value={formFields[f]||''} onChange={e => setFormFields(prev=>({...prev,[f]:e.target.value}))} placeholder={`Masukkan ${f}...`}
-                            style={{ width:'100%', padding:'9px 12px', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'8px', color:'white', fontSize:'12px', fontFamily:'monospace', boxSizing:'border-box' }} />
-                        </div>
+                        <FieldInput
+                          key={f}
+                          label={f}
+                          value={formFields[f]||''}
+                          onChange={(v) => setFormFields(prev=>({...prev,[f]:v}))}
+                        />
                       ))}
                     </div>
                     <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.3)', marginBottom:'12px' }}>🔒 API key disimpan secara aman dan terenkripsi</div>
