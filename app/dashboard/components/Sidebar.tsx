@@ -1,11 +1,6 @@
 'use client'
-
-const platforms = [
-  { id:'x', label:'X / Twitter', color:'#fff' },
-  { id:'ig', label:'Instagram', color:'#c0307a' },
-  { id:'li', label:'LinkedIn', color:'#0a66c2' },
-  { id:'fb', label:'Facebook', color:'#1877f2' },
-]
+import { useEffect, useState } from 'react'
+import { supabase } from '../../../lib/supabase'
 
 const menuItems = [
   { id:'home', icon:'📊', label:'Dashboard' },
@@ -29,7 +24,58 @@ interface SidebarProps {
   onLogout: () => void
 }
 
+interface ConnectedAccount {
+  id: string
+  platform: string
+  username: string
+  status: string
+}
+
+const platformColors: Record<string, string> = {
+  x: '#fff',
+  ig: '#c0307a',
+  li: '#0a66c2',
+  fb: '#1877f2',
+  yt: '#c00',
+  tk: '#010101',
+}
+
+const platformLabels: Record<string, string> = {
+  x: 'X / Twitter',
+  ig: 'Instagram',
+  li: 'LinkedIn',
+  fb: 'Facebook',
+  yt: 'YouTube',
+  tk: 'TikTok',
+}
+
 export default function Sidebar({ activeMenu, setActiveMenu, user, onLogout }: SidebarProps) {
+  const [accounts, setAccounts] = useState<ConnectedAccount[]>([])
+  const [userName, setUserName] = useState('')
+
+  useEffect(() => {
+    const loadData = async () => {
+      // Ambil nama dari user_metadata
+      const { data: { user: currentUser } } = await supabase.auth.getUser()
+      if (currentUser) {
+        setUserName(currentUser.user_metadata?.name || currentUser.email || '')
+      }
+
+      // Ambil akun terhubung dari tabel social_accounts
+      const { data, error } = await supabase
+        .from('social_accounts')
+        .select('*')
+        .eq('user_id', currentUser?.id)
+        .eq('status', 'active')
+        .limit(5)
+
+      if (!error && data) {
+        setAccounts(data)
+      }
+    }
+    loadData()
+  }, [])
+
   return (
     <div style={{
       ...glass, margin:'16px 0 16px 16px', padding:'1.5rem 1rem',
@@ -37,6 +83,7 @@ export default function Sidebar({ activeMenu, setActiveMenu, user, onLogout }: S
       borderRadius:'20px', position:'sticky', top:'16px',
       height:'calc(100vh - 32px)', overflowY:'auto'
     }}>
+
       {/* Logo */}
       <div style={{ display:'flex', alignItems:'center', gap:'10px', padding:'0 8px', marginBottom:'1.5rem' }}>
         <div style={{
@@ -64,16 +111,34 @@ export default function Sidebar({ activeMenu, setActiveMenu, user, onLogout }: S
         </div>
       ))}
 
-      {/* Akun terhubung */}
+      {/* Akun terhubung dari Supabase */}
       <div style={{ marginTop:'auto', paddingTop:'1rem', borderTop:'1px solid rgba(255,255,255,0.1)' }}>
-        <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.4)', marginBottom:'8px', paddingLeft:'4px' }}>AKUN TERHUBUNG</div>
-        {platforms.map(p => (
-          <div key={p.id} style={{ display:'flex', alignItems:'center', gap:'8px', padding:'5px 4px' }}>
-            <div style={{ width:'8px', height:'8px', borderRadius:'50%', background:p.color, boxShadow:`0 0 6px ${p.color}` }}></div>
-            <span style={{ fontSize:'12px', color:'rgba(255,255,255,0.6)', flex:1 }}>{p.label}</span>
-            <span style={{ fontSize:'11px', color:'#4ade80' }}>●</span>
+        <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.4)', marginBottom:'8px', paddingLeft:'4px' }}>
+          AKUN TERHUBUNG {accounts.length > 0 && `(${accounts.length})`}
+        </div>
+
+        {accounts.length === 0 ? (
+          <div style={{ fontSize:'12px', color:'rgba(255,255,255,0.3)', padding:'4px', textAlign:'center' }}>
+            Belum ada akun terhubung
           </div>
-        ))}
+        ) : (
+          accounts.map(acc => (
+            <div key={acc.id} style={{ display:'flex', alignItems:'center', gap:'8px', padding:'5px 4px' }}>
+              <div style={{
+                width:'8px', height:'8px', borderRadius:'50%',
+                background: platformColors[acc.platform] || '#fff',
+                boxShadow:`0 0 6px ${platformColors[acc.platform] || '#fff'}`
+              }}></div>
+              <span style={{ fontSize:'12px', color:'rgba(255,255,255,0.6)', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                {acc.username || platformLabels[acc.platform]}
+              </span>
+              <span style={{
+                fontSize:'10px',
+                color: acc.status === 'active' ? '#4ade80' : '#f87171'
+              }}>●</span>
+            </div>
+          ))
+        )}
       </div>
 
       {/* User */}
@@ -87,10 +152,12 @@ export default function Sidebar({ activeMenu, setActiveMenu, user, onLogout }: S
           display:'flex', alignItems:'center', justifyContent:'center',
           fontSize:'13px', fontWeight:'600', color:'white'
         }}>
-          {user?.email?.charAt(0).toUpperCase()}
+          {(userName || user?.email || '?').charAt(0).toUpperCase()}
         </div>
         <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ fontSize:'12px', fontWeight:'500', color:'white', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{user?.email}</div>
+          <div style={{ fontSize:'12px', fontWeight:'500', color:'white', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+            {userName || user?.email}
+          </div>
           <div style={{ fontSize:'10px', color:'rgba(255,255,255,0.4)' }}>Admin</div>
         </div>
         <button onClick={onLogout} style={{
